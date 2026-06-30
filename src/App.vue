@@ -1,85 +1,56 @@
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div class="app-shell">
+    <header class="topbar" v-if="auth.isAuthenticated">
+      <RouterLink to="/" class="brand">
+        <span class="brand-mark">S</span>
+        <div>
+          <strong>SkillSwap</strong>
+          <small>Peer tutoring marketplace</small>
+        </div>
+      </RouterLink>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+      <nav class="nav-links">
+        <RouterLink to="/" class="nav-link">Home</RouterLink>
+        <RouterLink to="/tutors" class="nav-link">Find tutors</RouterLink>
+        <RouterLink v-if="auth.activeRole === 'Tutor'" to="/dashboard" class="nav-link">Dashboard</RouterLink>
+        <RouterLink to="/messages" class="nav-link">Messages</RouterLink>
+        <RouterLink to="/profile" class="nav-link">Profile</RouterLink>
       </nav>
-    </div>
-  </header>
 
-  <RouterView />
+      <div class="topbar-right">
+        <div class="role-switch" v-if="auth.user && auth.user.roles.length > 1">
+          <button
+            v-for="role in auth.user.roles"
+            :key="role"
+            :class="{ active: auth.activeRole === role }"
+            @click="auth.switchRole(role)"
+          >{{ role }}</button>
+        </div>
+        <button class="avatar-pill" :title="auth.user?.name" @click="handleLogout">
+          {{ auth.user?.avatar }}
+        </button>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <RouterView />
+    </main>
+
+    <footer class="footer" v-if="auth.isAuthenticated">
+      <p>SkillSwap · Built for SCSM2223 · Group arcane</p>
+    </footer>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/useAuthStore'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+function handleLogout() {
+  auth.logout()
+  router.push({ name: 'login' })
 }
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
+</script>
