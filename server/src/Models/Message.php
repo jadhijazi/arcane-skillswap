@@ -16,7 +16,10 @@ class Message
     {
         foreach ($data as $k => $v) {
             if (property_exists($this, $k)) {
-                $this->{$k} = $v;
+                $this->{$k} = match($k) {
+                    'is_read' => (bool) $v,
+                    default   => $v,
+                };
             }
         }
     }

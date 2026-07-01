@@ -11,7 +11,7 @@ class Booking
     public int $user_skill_id;
     public string $start_time;
     public string $end_time;
-    public string $status = 'pending'; // pending, accepted, declined, confirmed, completed, cancelled
+    public string $status = 'pending';
     public float $amount = 0.0;
     public string $created_at;
 
@@ -19,7 +19,10 @@ class Booking
     {
         foreach ($data as $k => $v) {
             if (property_exists($this, $k)) {
-                $this->{$k} = $v;
+                $this->{$k} = match($k) {
+                    'amount' => (float) $v,
+                    default  => $v,
+                };
             }
         }
     }

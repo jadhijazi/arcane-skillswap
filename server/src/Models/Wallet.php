@@ -15,7 +15,10 @@ class Wallet
     {
         foreach ($data as $k => $v) {
             if (property_exists($this, $k)) {
-                $this->{$k} = $v;
+                $this->{$k} = match($k) {
+                    'balance' => (float) $v,
+                    default   => $v,
+                };
             }
         }
     }
