@@ -124,6 +124,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       return request<T>(path, { ...options, _isRetry: true })
     }
     tokenStorage.clear()
+    throw new ApiError('Your session has expired. Please log in again.', 401)
   }
 
   if (!res.ok || !json.success) {
