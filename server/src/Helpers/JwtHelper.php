@@ -33,9 +33,14 @@ class JwtHelper
         return JWT::encode($token, $this->secret, 'HS256');
     }
 
-    private function base64UrlDecode(string $input): string
+    /**
+     * Decode base64url -> raw bytes, with no text sanitization.
+     * Use this for anything that isn't guaranteed to be text (e.g. the
+     * raw HMAC signature) — stripping "control-looking" bytes out of
+     * binary data corrupts it.
+     */
+    private function base64UrlDecodeRaw(string $input): string
     {
-        // Replace URL-safe chars and add padding
         $base64 = strtr($input, '-_', '+/');
         $remainder = strlen($base64) % 4;
         if ($remainder) {
@@ -45,6 +50,17 @@ class JwtHelper
         if ($decoded === false) {
             throw new \RuntimeException('Base64 decode failed');
         }
+        return $decoded;
+    }
+
+    /**
+     * Decode base64url -> text, with BOM/invisible-char sanitization.
+     * Only safe to use on things that are supposed to be text, like the
+     * JSON payload — never on the raw binary signature.
+     */
+    private function base64UrlDecode(string $input): string
+    {
+        $decoded = $this->base64UrlDecodeRaw($input);
         // Strip BOM and invisible chars
         return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\xEF\xBB\xBF]/', '', $decoded);
     }
@@ -63,7 +79,7 @@ class JwtHelper
 
         // Verify HMAC signature
         $expectedSig = hash_hmac('sha256', "{$headerB64}.{$payloadB64}", $this->secret, true);
-        $providedSig  = $this->base64UrlDecode($signatureB64);
+        $providedSig  = $this->base64UrlDecodeRaw($signatureB64);
 
         if (!hash_equals($expectedSig, $providedSig)) {
             throw new \RuntimeException('Signature verification failed');
