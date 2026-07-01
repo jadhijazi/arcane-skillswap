@@ -25,14 +25,3 @@ return function (App $app) {
         $group->get('/{id}', ViewUserAction::class);
     });
 };
-
-$app->get('/debug-env', function (Request $request, Response $response) {
-    $data = [
-        'JWT_ISSUER' => $_ENV['JWT_ISSUER'] ?? getenv('JWT_ISSUER') ?: 'NOT SET',
-        'JWT_AUDIENCE' => $_ENV['JWT_AUDIENCE'] ?? getenv('JWT_AUDIENCE') ?: 'NOT SET',
-        'JWT_SECRET_SET' => !empty($_ENV['JWT_SECRET'] ?? getenv('JWT_SECRET')),
-        'JWT_ACCESS_TTL' => $_ENV['JWT_ACCESS_TTL'] ?? getenv('JWT_ACCESS_TTL') ?: 'NOT SET',
-    ];
-    $response->getBody()->write(json_encode($data));
-    return $response->withHeader('Content-Type', 'application/json');
-});
