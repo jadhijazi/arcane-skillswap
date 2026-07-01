@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-use App\bootstrap\AppFactory;
+use App\Bootstrap\AppFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
 
