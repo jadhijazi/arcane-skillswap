@@ -3,9 +3,6 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-
 class JwtHelper
 {
     private string $secret;
@@ -19,26 +16,11 @@ class JwtHelper
         $this->audience = $config['audience'] ?? '';
     }
 
-    public function issueAccessToken(array $payload, int $ttlSeconds): string
+    private function base64UrlEncode(string $input): string
     {
-        $now   = time();
-        $token = array_merge($payload, [
-            'iat' => $now,
-            'nbf' => $now,
-            'exp' => $now + $ttlSeconds,
-            'iss' => $this->issuer,
-            'aud' => $this->audience,
-        ]);
-
-        return JWT::encode($token, $this->secret, 'HS256');
+        return rtrim(strtr(base64_encode($input), '+/', '-_'), '=');
     }
 
-    /**
-     * Decode base64url -> raw bytes, with no text sanitization.
-     * Use this for anything that isn't guaranteed to be text (e.g. the
-     * raw HMAC signature) — stripping "control-looking" bytes out of
-     * binary data corrupts it.
-     */
     private function base64UrlDecodeRaw(string $input): string
     {
         $base64 = strtr($input, '-_', '+/');
@@ -53,23 +35,33 @@ class JwtHelper
         return $decoded;
     }
 
-    /**
-     * Decode base64url -> text, with BOM/invisible-char sanitization.
-     * Only safe to use on things that are supposed to be text, like the
-     * JSON payload — never on the raw binary signature.
-     */
     private function base64UrlDecode(string $input): string
     {
         $decoded = $this->base64UrlDecodeRaw($input);
-        // Strip BOM and invisible chars
         return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\xEF\xBB\xBF]/', '', $decoded);
+    }
+
+    public function issueAccessToken(array $payload, int $ttlSeconds): string
+    {
+        $now = time();
+        $payload = array_merge($payload, [
+            'iat' => $now,
+            'nbf' => $now,
+            'exp' => $now + $ttlSeconds,
+            'iss' => $this->issuer,
+            'aud' => $this->audience,
+        ]);
+
+        $header    = $this->base64UrlEncode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
+        $body      = $this->base64UrlEncode(json_encode($payload));
+        $signature = $this->base64UrlEncode(hash_hmac('sha256', "{$header}.{$body}", $this->secret, true));
+
+        return "{$header}.{$body}.{$signature}";
     }
 
     public function decode(string $jwt): object
     {
-        // Strip any whitespace/newlines from token
         $jwt = trim($jwt);
-
         $parts = explode('.', $jwt);
         if (count($parts) !== 3) {
             throw new \InvalidArgumentException('Wrong number of segments');
@@ -79,7 +71,7 @@ class JwtHelper
 
         // Verify HMAC signature
         $expectedSig = hash_hmac('sha256', "{$headerB64}.{$payloadB64}", $this->secret, true);
-        $providedSig  = $this->base64UrlDecodeRaw($signatureB64);
+        $providedSig = $this->base64UrlDecodeRaw($signatureB64);
 
         if (!hash_equals($expectedSig, $providedSig)) {
             throw new \RuntimeException('Signature verification failed');
