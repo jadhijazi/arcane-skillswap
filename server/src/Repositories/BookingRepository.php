@@ -58,8 +58,6 @@ class BookingRepository
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return array_map(fn($row) => new Booking($row), $rows);
     }
-        return array_map(fn($row) => new Booking($row), $rows);
-    }
 
     public function findByTutor(int $tutorId, int $limit = 50, int $offset = 0): array
     {
