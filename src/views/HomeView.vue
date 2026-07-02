@@ -187,6 +187,9 @@ onMounted(async () => {
     bookingStore.fetchTutorBookings(auth.user.id),
     messageStore.fetchUnreadCount(),
   ])
+  // Preload conversations with tutors from bookings
+  const tutorIds = [...new Set(bookingStore.learnerBookings.map((b) => b.tutorId))]
+  await Promise.all(tutorIds.map((id) => messageStore.fetchConversation(auth.user!.id, id).catch(() => {})))
 })
 </script>
 

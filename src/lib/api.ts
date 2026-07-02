@@ -61,6 +61,9 @@ export interface BackendBooking {
   end_time: string
   status: BackendBookingStatus
   amount: number
+  learner_name?: string
+  tutor_name?: string
+  skill_name?: string
 }
 
 export interface BackendMessage {
